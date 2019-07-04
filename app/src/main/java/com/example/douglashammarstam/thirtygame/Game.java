@@ -1,12 +1,12 @@
 package com.example.douglashammarstam.thirtygame;
 
-import android.content.Context;
-import android.widget.Toast;
-
+import android.os.Parcel;
+import android.os.Parcelable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Game {
+public class Game implements Parcelable {
+    private int mData;
 
 
     private boolean[] usedAlternatives;
@@ -21,10 +21,8 @@ public class Game {
 
     private User user;
 
-    //one player
 
-
-    Game(){
+    Game() {
 
         usedAlternatives = new boolean[10];
 
@@ -32,9 +30,8 @@ public class Game {
 
         dice = new Dice[6];
         playCount = 0;
-
         rollCount = 0;
-         user = new User();
+        user = new User();
 
 
         for (int i = 0; i < 6; i++) {
@@ -43,47 +40,29 @@ public class Game {
         }
     }
 
-     boolean isGameIsOver() {
+    boolean isGameIsOver() {
         return playCount > 2;
     }
 
-     boolean canPlay() {
-        for (int i : playTurns) {
-            if (rollCount == i)
-                return true;
-        }
-        return false;
 
-    }
+    void rollDice(boolean[] notRollIndex) {
 
-     boolean hasToRoll() {
-        return rollCount < 3;
-    }
+        if (canRoll()) {
+            incrementRollCount();
+            for (int i = 0; i < 6; i++) {
 
-
-     void rollDice(boolean[] notRollIndex) {
-        if (canPlay()) {
-            System.out.println("you have to choose alternative, please do so");
-            return;
-        }
-        incrementRollCount();
-        for (int i = 0; i < 6; i++) {
-
-            if (!notRollIndex[i]) {
-                dice[i].setValue(dice[i].roll());
+                if (!notRollIndex[i]) {
+                    dice[i].setValue(dice[i].roll());
+                }
             }
         }
     }
 
-     int play(String userSelectedOption) {
+    int play(String userSelectedOption) {
 
 
         int pointsGiven = 0;
 
-        if (!canPlay()) {
-
-            return -1;
-        }
 
         playCount++;
         if (userSelectedOption.equals("Low")) {
@@ -101,7 +80,7 @@ public class Game {
     }
 
 
-     void incrementRollCount() {
+    void incrementRollCount() {
 
         rollCount++;
 
@@ -128,7 +107,7 @@ public class Game {
         return usedAlternatives;
     }
 
-     Dice[] getDice() {
+    Dice[] getDice() {
         return dice;
     }
 
@@ -136,11 +115,11 @@ public class Game {
         return playCount;
     }
 
-     User getUser() {
+    User getUser() {
         return user;
     }
 
-     int calculatePossibleMovesForSpecificSum(String chosenAlternative) {
+    int calculatePossibleMovesForSpecificSum(String chosenAlternative) {
 
 
         int targetSum = 0;
@@ -225,15 +204,22 @@ public class Game {
 
         Map<Integer, Integer> pairs = new HashMap();
         for (Dice dice : dice) {
+
+            if (dice.getValue() == targetSum) {
+                pointsGiven += targetSum;
+                dice.setChosenInCalculation(true);
+            }
             if (pairs.containsKey(dice.getValue())) {
                 if (pairs.get(dice.getValue()) != null) {
                     pointsGiven += givePointsForPlay(dice.getValue(), targetSum - dice.getValue());
                 }
             } else if (!pairs.containsValue(dice.getValue())) {
                 pairs.put(targetSum - dice.getValue(), dice.getValue());
+                dice.setChosenInCalculation(true);
             }
-            resetRollCount();
         }
+        resetRollCount();
+        resetDice();
         user.getPlays().put(chosenAlternative, pointsGiven);
         user.increaseTotalScore(pointsGiven);
         return pointsGiven;
@@ -241,16 +227,22 @@ public class Game {
 
     }
 
-     int givePointsForPlay(int x, int y) {
+    private void resetDice() {
+
+        for(Dice dice : dice){
+            dice.setChosenInCalculation(false);
+        }
+    }
+
+    int givePointsForPlay(int x, int y) {
 
         int sum = x + y;
-        System.out.println("du får " + sum + " poäng för detta drag");
 
         return sum;
 
     }
 
-     int calculateLowSum() {
+    int calculateLowSum() {
 
         if (!usedAlternatives[0]) {
             int returnSum = 0;
@@ -275,20 +267,57 @@ public class Game {
 
     }
 
-    void resetRollCount() {
-        if (rollCount == 3) {
-            rollCount = 0;
-        }
+    boolean canRoll() {
+        return rollCount <= 2;
+    }
 
+    void resetRollCount() {
+            rollCount = 0;
     }
 
     public boolean[] getPlayedTurns() {
         return playedTurns;
     }
 
-     void restart() {
+    void restart() {
 
-        new Game();
+        usedAlternatives = new boolean[10];
+
+        playedTurns = new boolean[10];
+
+        dice = new Dice[6];
+        playCount = 0;
+        rollCount = 0;
+        user = new User();
+
+
+        for (int i = 0; i < 6; i++) {
+            dice[i] = new Dice();
+
+        }    }
+
+    public int describeContents() {
+        return 0;
+    }
+
+
+    public void writeToParcel(Parcel out, int flags) {
+        out.writeInt(mData);
+    }
+
+    public static final Parcelable.Creator<Game> CREATOR
+            = new Parcelable.Creator<Game>() {
+        public Game createFromParcel(Parcel in) {
+            return new Game(in);
+        }
+
+        public Game[] newArray(int size) {
+            return new Game[size];
+        }
+    };
+
+    private Game(Parcel in) {
+        mData = in.readInt();
     }
 }
 

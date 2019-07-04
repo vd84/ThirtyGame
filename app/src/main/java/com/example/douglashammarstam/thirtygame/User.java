@@ -32,11 +32,11 @@ public class User {
     }
 
     public String convertMapToString() {
-        StringBuilder mapAsString = new StringBuilder("{");
+        StringBuilder mapAsString = new StringBuilder("**");
         for (String key : plays.keySet()) {
-            mapAsString.append(key + "=" + plays.get(key) + ", ");
+            mapAsString.append("The play " + key + " got you: " +  plays.get(key) + "\n   ");
         }
-        mapAsString.delete(mapAsString.length()-2, mapAsString.length()).append("}");
+        mapAsString.delete(mapAsString.length()-2, mapAsString.length()).append("**");
         return mapAsString.toString();
     }
 

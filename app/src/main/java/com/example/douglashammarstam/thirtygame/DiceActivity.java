@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class DiceActivity extends Activity {
@@ -20,6 +21,9 @@ public class DiceActivity extends Activity {
     private Button replayButton;
     private Button resultButton;
     private Intent resultIntent;
+    private Button rollButton;
+    private TextView reRollText;
+    private boolean[] clickedCheckBoxArrayIndex;
 
 
     private Game game;
@@ -27,25 +31,49 @@ public class DiceActivity extends Activity {
 
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+
+
+        outState.putInt("rollButtonKey", rollButton.getVisibility());
+        outState.putInt("pickButtonKey", pickButton.getVisibility());
+        outState.putInt("rePlayButtonKey", replayButton.getVisibility());
+        outState.putInt("resultButtonKey", resultButton.getVisibility());
+        outState.putParcelable("savedGameObject", game);
+
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dice);
         dropdown = findViewById(R.id.dropdown);
-        pickButton = findViewById(R.id.ChooseAlternativeBtn);
 
         String[] items = new String[]{"Low", "4", "5", "6", "7", "8", "9", "10", "11", "12"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
         dropdown.setAdapter(adapter);
+        pickButton = findViewById(R.id.ChooseAlternativeButton);
         replayButton = findViewById(R.id.replayButton);
         resultButton = findViewById(R.id.resultButton);
+        rollButton = (Button) findViewById(R.id.btnRollDice);
+        reRollText = findViewById(R.id.reRollText);
+        clickedCheckBoxArrayIndex = new boolean[6];
+        game = new Game();
 
+
+        if (savedInstanceState != null) {
+            rollButton.setVisibility(savedInstanceState.getInt("rollButtonKey"));
+            pickButton.setVisibility(savedInstanceState.getInt("pickButtonKey"));
+            replayButton.setVisibility(savedInstanceState.getInt("rePlayButton"));
+            resultButton.setVisibility(savedInstanceState.getInt("resultButtonKey"));
+            game = savedInstanceState.getParcelable("savedGameObject");
+        }
         images[0] = (ImageView) findViewById(R.id.dice_icon_1);
         images[1] = (ImageView) findViewById(R.id.dice_icon_2);
         images[2] = (ImageView) findViewById(R.id.dice_icon_3);
         images[3] = (ImageView) findViewById(R.id.dice_icon_4);
         images[4] = (ImageView) findViewById(R.id.dice_icon_5);
         images[5] = (ImageView) findViewById(R.id.dice_icon_6);
-
         checkBoxes[0] = (CheckBox) findViewById(R.id.checkBox1);
         checkBoxes[1] = (CheckBox) findViewById(R.id.checkBox2);
         checkBoxes[2] = (CheckBox) findViewById(R.id.checkBox3);
@@ -54,38 +82,14 @@ public class DiceActivity extends Activity {
         checkBoxes[5] = (CheckBox) findViewById(R.id.checkBox6);
 
 
-        //Skapar usern som ska spela spelet
-        game = new Game();
+        rollDiceGUIAndArray();
 
-
-        //Här rullar vi tärningarna
-        final Button rollButton = (Button) findViewById(R.id.btnRollDice);
         rollButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                boolean[] clickedCheckBoxArrayIndex = new boolean[6];
-                for (int i = 0; i < 6; i++) {
-                    if (checkBoxes[i].isChecked()) {
 
-                        clickedCheckBoxArrayIndex[i] = true;
-
-
-                    }
-                }
-
-
-                if (!game.canPlay()) {
-                    game.rollDice(clickedCheckBoxArrayIndex);
-
-                    for (int i = 0; i < 6; i++) {
-                        if (!clickedCheckBoxArrayIndex[i]) {
-                            int res = getResources().getIdentifier("grey" + game.getDice()[i].getValue(), "drawable", "com.example.douglashammarstam.thirtygame");
-                            images[i].setImageResource(res);
-                        }
-
-                    }
-                }
+                rollDiceGUIAndArray();
 
 
             }
@@ -96,34 +100,22 @@ public class DiceActivity extends Activity {
             @Override
             public void onClick(View v) {
 
-                if (game.hasToRoll()) {
-                    Toast.makeText(getApplicationContext(), "You hace to roll three times before playing", Toast.LENGTH_SHORT).show();
-                    return;
 
-                }
+                String userSelectedValueDropDown = dropdown.getSelectedItem().toString();
 
 
-                if (game.canPlay()) {
+                int points = game.play(userSelectedValueDropDown);
 
 
-                    String userSelectedValueDropDown = dropdown.getSelectedItem().toString();
-
-
-                    int points = game.play(userSelectedValueDropDown);
-
-
-                    if (points != -1) {
-                        Toast.makeText(getApplicationContext(), "You got " + points + " points that round", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getApplicationContext(), "You got " + 0 + " points that round", Toast.LENGTH_SHORT).show();
-
-
-                    }
-
-
+                if (points != -1) {
+                    Toast.makeText(getApplicationContext(), "You got " + points + " points that round", Toast.LENGTH_SHORT).show();
                 } else {
-                    System.out.println("you cant choose alternative yet, please play 3 times");
+                    Toast.makeText(getApplicationContext(), "You got " + 0 + " points that round", Toast.LENGTH_SHORT).show();
+
+
                 }
+
+
                 if (game.isGameIsOver()) {
                     resultIntent = new Intent(DiceActivity.this, ResultActivity.class);
                     resultIntent.putExtra("TotalScore", String.valueOf(game.getUser().getTotalScore()));
@@ -133,6 +125,17 @@ public class DiceActivity extends Activity {
                     resultButton.setVisibility(View.VISIBLE);
 
                     startActivity(resultIntent);
+                } else {
+
+                    boolean[] clickedCheckBoxArrayIndex = new boolean[6];
+                    for (int i = 0; i < 6; i++) {
+                        clickedCheckBoxArrayIndex[i] = false;
+                        checkBoxes[i].setChecked(false);
+                    }
+
+                    rollDiceGUIAndArray();
+                    setReRollGuiText();
+
                 }
 
             }
@@ -159,6 +162,44 @@ public class DiceActivity extends Activity {
 
             }
         });
+
+
+    }
+
+    private void rollDiceGUIAndArray() {
+        checkWhichCheckBoxesArePressed();
+        game.rollDice(clickedCheckBoxArrayIndex);
+        rollDiceGUI(clickedCheckBoxArrayIndex);
+        setReRollGuiText();
+
+
+    }
+
+    private void setReRollGuiText() {
+        String text = 3 - game.getRollCount() + " Re-rolls left";
+        reRollText.setText(text);
+
+    }
+
+    private void checkWhichCheckBoxesArePressed() {
+
+        for (int i = 0; i < 6; i++) {
+            if (checkBoxes[i].isChecked()) {
+                clickedCheckBoxArrayIndex[i] = true;
+            }
+        }
+    }
+
+    private void rollDiceGUI(boolean[] clickedCheckBoxArrayIndex) {
+
+        for (int i = 0; i < 6; i++) {
+            if (!clickedCheckBoxArrayIndex[i]) {
+                int res = getResources().getIdentifier("grey" + game.getDice()[i].getValue(), "drawable", "com.example.douglashammarstam.thirtygame");
+                images[i].setImageResource(res);
+
+            }
+
+        }
     }
 
 }
