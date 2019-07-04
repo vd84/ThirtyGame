@@ -1,13 +1,17 @@
 package com.example.douglashammarstam.thirtygame;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.app.Activity;
 import android.widget.TextView;
 
 public class ResultActivity extends Activity {
 
-    private TextView resultText;
+
+    TextView resultText;
+
+    TextView plays;
+
+
 
 
 
@@ -17,8 +21,14 @@ public class ResultActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
 
-        Intent intent = getIntent();
-        resultText.setText(intent.getStringExtra("userScore"));
+        resultText = findViewById(R.id.totalScoreText);
+
+        resultText.setText(getIntent().getStringExtra("TotalScore"));
+
+
+        plays = findViewById(R.id.playsText);
+
+        plays.setText(getIntent().getStringExtra("Plays"));
 
 
 

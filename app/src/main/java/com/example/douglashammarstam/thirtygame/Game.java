@@ -9,36 +9,46 @@ import java.util.Map;
 public class Game {
 
 
+    private boolean[] usedAlternatives;
 
-    private boolean[] usedAlternatives = new boolean[10];
+    private int[] playTurns = {3, 6, 9, 12, 15, 18, 21, 24, 27, 30};
+    private boolean[] playedTurns;
 
-    private int[] playTurns = {3,6,9,12,15,18,21,24,27,30};
-    private boolean[] playedTurns = new boolean[10];
+    private Dice[] dice;
+    private int playCount;
 
-    private Dice[] dice = new Dice[6];
-    private int playCount = 0;
-
-    private int rollCount = 0;
+    private int rollCount;
 
     private User user;
-
 
     //one player
 
 
-    public Game() {
+    Game(){
+
+        usedAlternatives = new boolean[10];
+
+        playedTurns = new boolean[10];
+
+        dice = new Dice[6];
+        playCount = 0;
+
+        rollCount = 0;
+         user = new User();
+
+
         for (int i = 0; i < 6; i++) {
             dice[i] = new Dice();
 
         }
     }
 
-    public boolean isGameIsOver() {
-        return playCount > 9 && !canPlay();
+     boolean isGameIsOver() {
+        return playCount > 2;
     }
 
-    public boolean canPlay() {
-        for (int i : playTurns){
+     boolean canPlay() {
+        for (int i : playTurns) {
             if (rollCount == i)
                 return true;
         }
@@ -46,8 +56,12 @@ public class Game {
 
     }
 
+     boolean hasToRoll() {
+        return rollCount < 3;
+    }
 
-    public void rollDice(boolean[] notRollIndex) {
+
+     void rollDice(boolean[] notRollIndex) {
         if (canPlay()) {
             System.out.println("you have to choose alternative, please do so");
             return;
@@ -61,18 +75,18 @@ public class Game {
         }
     }
 
-    public int play(String userSelectedOption) {
+     int play(String userSelectedOption) {
+
 
         int pointsGiven = 0;
 
-        if(!canPlay()){
+        if (!canPlay()) {
 
             return -1;
         }
 
-        playedTurns[]
         playCount++;
-        if (userSelectedOption.equals("Low")){
+        if (userSelectedOption.equals("Low")) {
             pointsGiven = calculateLowSum();
 
 
@@ -87,8 +101,11 @@ public class Game {
     }
 
 
-    public void incrementRollCount() {
+     void incrementRollCount() {
+
         rollCount++;
+
+
     }
 
     public int[] getPlayTurns() {
@@ -111,7 +128,7 @@ public class Game {
         return usedAlternatives;
     }
 
-    public Dice[] getDice() {
+     Dice[] getDice() {
         return dice;
     }
 
@@ -119,13 +136,11 @@ public class Game {
         return playCount;
     }
 
-    public User getUser() {
+     User getUser() {
         return user;
     }
 
-    public int calculatePossibleMovesForSpecificSum(String chosenAlternative) {
-
-
+     int calculatePossibleMovesForSpecificSum(String chosenAlternative) {
 
 
         int targetSum = 0;
@@ -137,7 +152,7 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
             case "5":
                 if (!usedAlternatives[2]) {
                     targetSum = 5;
@@ -145,7 +160,7 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
             case "6":
                 if (!usedAlternatives[3]) {
                     targetSum = 6;
@@ -153,7 +168,7 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
 
             case "7":
                 if (!usedAlternatives[4]) {
@@ -162,7 +177,7 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
             case "8":
                 if (!usedAlternatives[5]) {
                     targetSum = 8;
@@ -170,7 +185,7 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
             case "9":
                 if (!usedAlternatives[6]) {
                     targetSum = 9;
@@ -178,7 +193,7 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
             case "10":
                 if (!usedAlternatives[7]) {
                     targetSum = 10;
@@ -186,7 +201,7 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
             case "11":
                 if (!usedAlternatives[8]) {
                     targetSum = 11;
@@ -194,7 +209,7 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
             case "12":
                 if (!usedAlternatives[9]) {
                     targetSum = 12;
@@ -202,36 +217,40 @@ public class Game {
                     break;
                 }
                 System.out.println("du har redan använt detta alternativ, välj ett annat");
-                return-1;
+                return -1;
         }
+
+        int pointsGiven = 0;
 
 
         Map<Integer, Integer> pairs = new HashMap();
         for (Dice dice : dice) {
             if (pairs.containsKey(dice.getValue())) {
                 if (pairs.get(dice.getValue()) != null) {
-                    return givePointsForPlay(dice.getValue(), targetSum - dice.getValue());
+                    pointsGiven += givePointsForPlay(dice.getValue(), targetSum - dice.getValue());
                 }
-                pairs.put(targetSum - dice.getValue(), null);
             } else if (!pairs.containsValue(dice.getValue())) {
                 pairs.put(targetSum - dice.getValue(), dice.getValue());
             }
+            resetRollCount();
         }
-        return -1;
+        user.getPlays().put(chosenAlternative, pointsGiven);
+        user.increaseTotalScore(pointsGiven);
+        return pointsGiven;
 
 
     }
 
-    public int givePointsForPlay(int x, int y) {
+     int givePointsForPlay(int x, int y) {
 
         int sum = x + y;
         System.out.println("du får " + sum + " poäng för detta drag");
 
-        return  sum;
+        return sum;
 
     }
 
-    public int calculateLowSum() {
+     int calculateLowSum() {
 
         if (!usedAlternatives[0]) {
             int returnSum = 0;
@@ -243,16 +262,34 @@ public class Game {
                 }
 
             }
+            resetRollCount();
             System.out.println(returnSum);
             usedAlternatives[0] = true;
+            user.getPlays().put("Low", returnSum);
+            user.increaseTotalScore(returnSum);
             return returnSum;
         }
+
         System.out.println("you have already chosen this alternative");
         return -1;
+
     }
 
+    void resetRollCount() {
+        if (rollCount == 3) {
+            rollCount = 0;
+        }
 
+    }
 
+    public boolean[] getPlayedTurns() {
+        return playedTurns;
+    }
+
+     void restart() {
+
+        new Game();
+    }
 }
 
 

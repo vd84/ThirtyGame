@@ -17,6 +17,9 @@ public class DiceActivity extends Activity {
     private CheckBox checkBox1, checkBox12, checkBox3, checkBox4, checkBox5, checkBox6;
     private CheckBox checkBoxes[] = {checkBox1, checkBox12, checkBox3, checkBox4, checkBox5, checkBox6};
     private Button pickButton;
+    private Button replayButton;
+    private Button resultButton;
+    private Intent resultIntent;
 
 
     private Game game;
@@ -33,6 +36,8 @@ public class DiceActivity extends Activity {
         String[] items = new String[]{"Low", "4", "5", "6", "7", "8", "9", "10", "11", "12"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items);
         dropdown.setAdapter(adapter);
+        replayButton = findViewById(R.id.replayButton);
+        resultButton = findViewById(R.id.resultButton);
 
         images[0] = (ImageView) findViewById(R.id.dice_icon_1);
         images[1] = (ImageView) findViewById(R.id.dice_icon_2);
@@ -91,15 +96,17 @@ public class DiceActivity extends Activity {
             @Override
             public void onClick(View v) {
 
+                if (game.hasToRoll()) {
+                    Toast.makeText(getApplicationContext(), "You hace to roll three times before playing", Toast.LENGTH_SHORT).show();
+                    return;
+
+                }
+
+
                 if (game.canPlay()) {
 
 
                     String userSelectedValueDropDown = dropdown.getSelectedItem().toString();
-
-                    if (game.isGameIsOver()) {
-                        Intent intent = new Intent(DiceActivity.this, ResultActivity.class);
-                        startActivity(intent);
-                    }
 
 
                     int points = game.play(userSelectedValueDropDown);
@@ -117,6 +124,38 @@ public class DiceActivity extends Activity {
                 } else {
                     System.out.println("you cant choose alternative yet, please play 3 times");
                 }
+                if (game.isGameIsOver()) {
+                    resultIntent = new Intent(DiceActivity.this, ResultActivity.class);
+                    resultIntent.putExtra("TotalScore", String.valueOf(game.getUser().getTotalScore()));
+                    resultIntent.putExtra("Plays", game.getUser().convertMapToString());
+                    pickButton.setVisibility(View.INVISIBLE);
+                    rollButton.setVisibility(View.INVISIBLE);
+                    resultButton.setVisibility(View.VISIBLE);
+
+                    startActivity(resultIntent);
+                }
+
+            }
+        });
+
+        replayButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                pickButton.setVisibility(View.VISIBLE);
+                rollButton.setVisibility(View.VISIBLE);
+                resultButton.setVisibility(View.INVISIBLE);
+
+
+                game.restart();
+            }
+        });
+
+        resultButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                startActivity(resultIntent);
+
 
             }
         });
